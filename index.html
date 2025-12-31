@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang=»ru»>
+<head>
+    <meta charset=»UTF-8»>
+    <meta name=»viewport» content=»width=device-width, initial-scale=1.0»>
+    <title>Фиксатор кликер</title>
+    <style>
+        Body {
+            Font-family: Arial, sans-serif;
+            Text-align: center;
+            Background-color: #f0f0f0;
+            Margin: 0;
+            Padding: 20px;
+        }
+        .container {
+            Max-width: 600px;
+            Margin: 0 auto;
+            Background-color: white;
+            Padding: 20px;
+            Border-radius: 10px;
+            Box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        H1 {
+            Color: #333;
+        }
+        .stats {
+            Margin: 20px 0;
+            Font-size: 18px;
+        }
+        .clickable-image {
+            Width: 300px;
+            Height: 300px;
+            Cursor: pointer;
+            Border-radius: 10px;
+            Transition: transform 0.1s;
+            Object-fit: cover;
+        }
+        .clickable-image:active {
+            Transform: scale(0.95);
+        }
+        .upgrades {
+            Margin-top: 20px;
+            Display: flex;
+            Flex-wrap: wrap;
+            Justify-content: center;
+            Gap: 10px;
+        }
+        .upgrade {
+            Padding: 10px 15px;
+            Background-color: #4CAF50;
+            Color: white;
+            Border: none;
+            Border-radius: 5px;
+            Cursor: pointer;
+            Transition: background-color 0.3s;
+        }
+        .upgrade:hover {
+            Background-color: #45a049;
+        }
+        .upgrade:disabled {
+            Background-color: #cccccc;
+            Cursor: not-allowed;
+        }
+        .reset-btn {
+            Margin-top: 20px;
+            Padding: 10px 15px;
+            Background-color: #f44336;
+            Color: white;
+            Border: none;
+            Border-radius: 5px;
+            Cursor: pointer;
+        }
+        .reset-btn:hover {
+            Background-color: #d32f2f;
+        }
+    </style>
+</head>
+<body>
+    <div class=»container»>
+        <h1>Фиксатор кликер</h1>
+        <div class=»stats»>
+            <p>Фиксаций: <span id=»score»>0</span></p>
+            <p>Фиксация за клик: <span id=»points-per-click»>1</span></p>
+            <p>Автофиксаций: <span id=»auto-clickers»>0</span></p>
+        </div>
+        
+        <img src=»https://i.imgur.com/OWQZDbl.jpeg» alt=»Кликни меня!» class=»clickable-image» id=»clickable-image»>
+        
+        <div class=»upgrades»>
+            <button class=»upgrade» id=»upgrade-click»>Улучшить фиксацию (10 очков)</button>
+            <button class=»upgrade» id=»buy-auto-clicker»>Купить автофиксацию (50 очков)</button>
+        </div>
+        
+        <button class=»reset-btn» id=»reset-btn»>Сбросить прогресс</button>
+    </div>
+
+    <script>
+        // Инициализация игрового состояния
+        Let gameState = {
+            Score: 0,
+            pointsPerClick: 1,
+            autoClickers: 0,
+            autoClickerCost: 50,
+            upgradeClickCost: 10
+        };
+
+        // Функции для работы с куки
+        Function setCookie(name, value, days) {
+            Let expires = «»;
+            If (days) {
+                Const date = new Date();
+                Date.setTime(date.getTime() + (days * 24 * 60 * 60 * 1000));
+                Expires = «; expires=» + date.toUTCString();
+            }
+            Document.cookie = name + «=» + (JSON.stringify(value) || «») + expires + «; path=/»;
+        }
+
+        Function getCookie(name) {
+            Const nameEQ = name + «=»;
+            Const ca = document.cookie.split(';');
+            For(let i = 0; i < ca.length; i++) {
+                Let c = ca[i];
+                While (c.charAt(0) === ' ') c = c.substring(1, c.length);
+                If (c.indexOf(nameEQ) === 0) return JSON.parse(c.substring(nameEQ.length, c.length));
+            }
+            Return null;
+        }
+
+        Function eraseCookie(name) {
+            Document.cookie = name + '=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT;';
+        }
+
+        // Загрузка состояния из куки
+        Function loadGameState() {
+            Const savedState = getCookie('clickerGame');
+            If (savedState) {
+                gameState = savedState;
+                updateUI();
+            }
+        }
+
+        // Сохранение состояния в куки
+        Function saveGameState() {
+            setCookie('clickerGame', gameState, 30); // Сохраняем на 30 дней
+        }
+
+        // Обновление интерфейса
+        Function updateUI() {
+            Document.getElementById('score').textContent = gameState.score;
+            Document.getElementById('points-per-click').textContent = gameState.pointsPerClick;
+            Document.getElementById('auto-clickers').textContent = gameState.autoClickers;
+            
+            // Обновление состояния кнопок улучшений
+            Document.getElementById('upgrade-click').disabled = gameState.score < gameState.upgradeClickCost;
+            Document.getElementById('buy-auto-clicker').disabled = gameState.score < gameState.autoClickerCost;
+            
+            // Обновление текста кнопок с ценами
+            Document.getElementById('upgrade-click').textContent = `Улучшить фиксацию (${gameState.upgradeClickCost} очков)`;
+            Document.getElementById('buy-auto-clicker').textContent = `Купить автофиксацию (${gameState.autoClickerCost} очков)`;
+        }
+
+        // Обработчик клика по изображению
+        Document.getElementById('clickable-image').addEventListener('click', function() {
+            gameState.score += gameState.pointsPerClick;
+            updateUI();
+            saveGameState();
+        });
+
+        // Обработчик улучшения клика
+        Document.getElementById('upgrade-click').addEventListener('click', function() {
+            If (gameState.score >= gameState.upgradeClickCost) {
+                gameState.score -= gameState.upgradeClickCost;
+                gameState.pointsPerClick += 1;
+                gameState.upgradeClickCost = Math.floor(gameState.upgradeClickCost * 1.5);
+                updateUI();
+                saveGameState();
+            }
+        });
+
+        // Обработчик покупки автокликера
+        Document.getElementById('buy-auto-clicker').addEventListener('click', function() {
+            If (gameState.score >= gameState.autoClickerCost) {
+                gameState.score -= gameState.autoClickerCost;
+                gameState.autoClickers += 1;
+                gameState.autoClickerCost = Math.floor(gameState.autoClickerCost * 1.5);
+                updateUI();
+                saveGameState();
+            }
+        });
+
+        // Обработчик сброса прогресса
+        Document.getElementById('reset-btn').addEventListener('click', function() {
+            If (confirm(«Вы уверены, что хотите сбросить весь прогресс? Сосали?»)) {
+                gameState = {
+                    score: 0,
+                    pointsPerClick: 1,
+                    autoClickers: 0,
+                    autoClickerCost: 50,
+                    upgradeClickCost: 10
+                };
+                eraseCookie('clickerGame');
+                updateUI();
+                saveGameState();
+            }
+        });
+
+        // Система автокликеров
+        setInterval(function() {
+            if (gameState.autoClickers > 0) {
+                gameState.score += gameState.autoClickers;
+                updateUI();
+                saveGameState();
+            }
+        }, 1000); // Каждую секунду
+
+        // Загрузка состояния при запуске
+        loadGameState();
+    </script>
+</body>
+</html>
+
